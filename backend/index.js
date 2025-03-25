@@ -27,20 +27,76 @@ let saloons = require("./saloons");
 app.post("/createSaloon", (req, res) => {
   const { saloonName, email, contact, password } = req.body;
 
-  // Validation
   if (!saloonName || !email || !contact || !password) {
     return res.status(400).json({ message: "All fields are required." });
   }
 
-  // Generate Saloon ID
-  const saloonId = `SAL-${Date.now()}`;
-  const newSaloon = { saloonId, saloonName, email, contact, password };
+  const saloonId = `SAL-${Date.now()}`; // Generate unique saloonId
+  const newSaloon = {
+    saloonId,
+    saloonName,
+    email,
+    contact,
+    password,
+    status: "Live", // Default status
+  };
 
-  // Push to saloons array
-  if (!Array.isArray(saloons)) saloons = []; // Ensure it's an array
+  // Push the new saloon
   saloons.push(newSaloon);
 
-  // Write to file
+  // Write updated saloons to file
+  const fileContent = `const saloons = ${JSON.stringify(
+    saloons,
+    null,
+    2
+  )};\n\nmodule.exports = saloons;`;
+  fs.writeFileSync(filePath, fileContent);
+
+  res.status(201).json({ message: "Saloon created successfully!", newSaloon });
+});
+
+// Root API
+app.get("/", (req, res) => {
+  res.send("Welcome to the Saloon API!");
+});
+
+// View All Saloons API
+app.get("/viewAllSaloons", (req, res) => {
+  try {
+    if (Array.isArray(saloons) && saloons.length > 0) {
+      res.status(200).json(saloons);
+    } else {
+      res.status(200).json({ message: "No saloons found." });
+    }
+  } catch (error) {
+    console.error("Error fetching saloons:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+});
+
+// Edit Saloon API
+app.put("/editSaloon/:id", (req, res) => {
+  const { id } = req.params;
+  const { saloonName, email, contact, password, status } = req.body;
+
+  if (!saloonName || !email || !contact || !password || !status) {
+    return res.status(400).json({ message: "All fields are required." });
+  }
+
+  const index = saloons.findIndex((s) => s.saloonId === id);
+  if (index === -1) {
+    return res.status(404).json({ message: "Saloon not found." });
+  }
+
+  saloons[index] = {
+    ...saloons[index],
+    saloonName,
+    email,
+    contact,
+    password,
+    status,
+  };
+
   const fileContent = `const saloons = ${JSON.stringify(
     saloons,
     null,
@@ -49,16 +105,10 @@ app.post("/createSaloon", (req, res) => {
 
   try {
     fs.writeFileSync(filePath, fileContent);
-    res.status(201).json({ message: "Saloon created successfully!", saloonId });
+    res.status(200).json({ message: "Saloon updated successfully!" });
   } catch (error) {
-    console.error("File write error:", error);
     res.status(500).json({ message: "Internal server error." });
   }
-});
-
-// Root API
-app.get("/", (req, res) => {
-  res.send("Welcome to the Saloon API!");
 });
 
 // Start Server
