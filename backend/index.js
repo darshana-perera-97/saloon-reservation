@@ -111,6 +111,31 @@ app.put("/editSaloon/:id", (req, res) => {
   }
 });
 
+app.post("/loginSaloon", (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res
+      .status(400)
+      .json({ message: "Email and password are required." });
+  }
+
+  const saloon = saloons.find(
+    (s) => s.email === email && s.password === password
+  );
+
+  if (!saloon) {
+    return res.status(401).json({ message: "Invalid credentials." });
+  }
+
+  res.status(200).json({
+    message: "Login successful.",
+    saloonId: saloon.saloonId,
+    saloonName: saloon.saloonName,
+    status: saloon.status,
+  });
+});
+
 // Start Server
 app.listen(port, () => {
   console.log(`✅ Server running on http://localhost:${port}`);
